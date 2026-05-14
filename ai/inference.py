@@ -1,3 +1,4 @@
+import os
 import torch
 import timm
 from torchvision import transforms
@@ -5,7 +6,7 @@ from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-BEST_PATH = "./models/swin_dataset_best.pth"
+BEST_PATH = os.path.join(os.path.dirname(__file__), "../models/swin_dataset_best.pth")
 
 model = timm.create_model(
     "swin_tiny_patch4_window7_224",
