@@ -3,6 +3,8 @@ import os
 import shutil
 import uuid
 
+from inference import predict_image
+
 app = FastAPI()
 
 UPLOAD_DIR = "temp_uploads"
@@ -24,10 +26,11 @@ async def predict(file: UploadFile = File(...)):
         with open(temp_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
+        result = predict_image(temp_path)
+
         return {
             "filename": file.filename,
-            "saved_path": temp_path,
-            "message": "Image received successfully"
+            **result
         }
 
     finally:
