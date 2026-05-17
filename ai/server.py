@@ -1,16 +1,23 @@
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 import shutil
 import uuid
 import httpx
 
-from inference import predict_image
+from inference import predict_image, generate_grad_cam
 
 app = FastAPI()
 
 UPLOAD_DIR = "temp_uploads"
+GRAD_CAM_DIR = "grad_cam_images"
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(GRAD_CAM_DIR, exist_ok=True)
+
+app.mount("/grad-cam-images", StaticFiles(directory=GRAD_CAM_DIR), name="grad_cam_images")
 
 
 class AnalyzeRequest(BaseModel):
@@ -35,11 +42,21 @@ async def run_analysis(image_url: str, callback_url: str):
 
         result = predict_image(temp_path)
 
+        grad_cam_url = None
+        try:
+            target_class_idx = 1 if result["prediction"] == "DEFECT" else 0
+            grad_cam_filename = f"{uuid.uuid4()}.jpg"
+            grad_cam_path = os.path.join(GRAD_CAM_DIR, grad_cam_filename)
+            generate_grad_cam(temp_path, grad_cam_path, target_class_idx=target_class_idx)
+            grad_cam_url = f"{BASE_URL}/grad-cam-images/{grad_cam_filename}"
+        except Exception as e:
+            print(f"[WARN] Grad-CAM generation failed: {e}")
+
         callback_payload = {
             "hasDefect": result["prediction"] == "DEFECT",
             "defectType": None,
             "resultNote": f"prediction={result['prediction']}, confidence={result['confidence']:.4f}, defect_prob={result['defect_probability']:.4f}",
-            "gradCamImageUrl": None,
+            "gradCamImageUrl": grad_cam_url,
         }
 
         async with httpx.AsyncClient() as client:
