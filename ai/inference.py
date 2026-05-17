@@ -41,6 +41,9 @@ def predict_image(image_path):
         output = model(input_tensor)
         probs = torch.softmax(output, dim=1)[0]
 
+    print(f"[DEBUG] raw output: {output[0].tolist()}")
+    print(f"[DEBUG] probs[0]={probs[0].item():.4f}, probs[1]={probs[1].item():.4f}")
+
     normal_prob = probs[0].item()
     defect_prob = probs[1].item()
 

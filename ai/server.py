@@ -25,7 +25,10 @@ async def run_analysis(image_url: str, callback_url: str):
 
     try:
         async with httpx.AsyncClient(follow_redirects=True) as client:
-            response = await client.get(image_url)
+            response = await client.get(
+                image_url,
+                headers={"X-Service-Key": "d74d235b1bbe0b3e49f53d7a9cca2766704abb1d2e1892b818f1217690ebc933"},
+            )
             response.raise_for_status()
             with open(temp_path, "wb") as f:
                 f.write(response.content)
